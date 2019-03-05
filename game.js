@@ -95,6 +95,10 @@ create: function(){
              if (this.ball.collide(element)) {
                  this.ball.kickout(element);
                  this.totalScore +=1;
+
+                 if (game.totalScore >= game.blocks.length){
+                     game.over()
+                 }
              };
          };
      }, this);
@@ -122,6 +126,7 @@ create: function(){
      
  },
     over: function () {
+
         console.log("Game Over");
         this.running = false;
         alert(`Игра окончена, вы разрушили ${this.totalScore} блоков. `);
