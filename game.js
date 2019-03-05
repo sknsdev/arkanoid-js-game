@@ -3,6 +3,8 @@ let game = {
     height: 360,
     ctx: undefined,
     platform: undefined,
+    running: true,
+    totalScore: 0,
     rows: 4,
     cols: 8,
     blocks: [],
@@ -24,6 +26,7 @@ init: function(){
             game.platform.dx = game.platform.speed
         } else if (e.keyCode == 32){
             game.platform.pushBall();
+
         }
         
     });
@@ -65,7 +68,7 @@ create: function(){
         this.ctx.clearRect(0,0,this.width, this.height);
         this.ctx.drawImage(this.sprites.background, 0, 0); //Отрисовка бг по коорд. 0,0
         this.ctx.drawImage(this.sprites.platform, this.platform.x, this.platform.y);
-        this.ctx.drawImage(this.sprites.ball, this.ball.x,this.ball.y );
+
 
         this.blocks.forEach(function (element) {
             if (element.isAlive){
@@ -73,59 +76,124 @@ create: function(){
             }
         }, this);
 
+        this.ctx.drawImage(this.sprites.ball, this.ball.x,this.ball.y );
  },
     //----------------------------------
  update: function(){
      if (this.platform.dx){
          this.platform.move();
-     }
-     
+     };
+
      if (this.ball.dx || this.ball.dy) {
          this.ball.move();
-     }
+     };
+
+
 
      this.blocks.forEach(function (element) {
          if (element.isAlive) {
              if (this.ball.collide(element)) {
                  this.ball.kickout(element);
+                 this.totalScore +=1;
              };
          };
      }, this);
-     
+
+    this.ball.sideCheck();
+
+
+           if (this.ball.collide2(game.platform)){
+               this.ball.bumpPlatform(game.platform)
+               };
+
+
  },
 
  run: function () {
         this.render();
         this.update();
-         window.requestAnimationFrame(function () {
-            game.run()
-     }); //вывод на экран бг
+
+        if (this.running){
+
+            window.requestAnimationFrame(function () {
+                game.run()
+            }); //вывод на экран бг
+        }
      
  },
+    over: function () {
+        console.log("Game Over");
+        this.running = false;
+        alert(`Игра окончена, вы разрушили ${this.totalScore} блоков. `);
+    },
+
 
 };
 game.ball = {
     x: 340,
-    y: 275,
+    y: 270,
     dx: 0,
     dy: 0,
-    speed: 4,
+    speed: 2,
+    height: 22,
+    width: 22,
+   // rised: false,
 
-    collide: function(element){
+    platfromCollide: function(element){
         let x = this.x + this.dx;
         let y = this.y + this.dy;
+        
         if (x + this.width > element.x &&
-            x < element.x + element.width &&
-            y + this.height > element.y &&
-            y< element.y + element.height){
+        x < element.x + element.width &&
+        y + this.height > element.y &&
+        y < element.y + element.height
+
+        ) {
             return true;
         }
         return false;
     },
-    kickout: function(rec){
-    this.dy += -1;
-    rec.isAlive = false;
+
+    collide2: function(element){
+        let x = this.x + this.dx;
+        let y = this.y + this.dy;
+
+        if ((element.x < x)&&(x < element.x + element.width)){
+            if (y > element.y - element.height){
+                console.log('Platform collide');
+                return true;
+            }
+        }else
+            return false
+        },
+
+    collide: function(element){
+        let x = this.x + this.dx;
+        let y = this.y + this.dy;
+  //     console.log('-----------------');
+  //     console.log(element.x + element.width);//250
+
+  //     console.log(x);//340
+  //     console.log('-----------------');
+
+
+        if (
+            x < element.x + element.width &&
+
+            y < element.y + element.height){
+
+            console.log('Collide');
+            return (true);
+        } else {
+        return (false);
+        }
     },
+    kickout: function(rec){
+        this.dy *= -1;
+        rec.isAlive = false;
+        console.log('Touched dy * -1');
+
+        },
 
 
     jump: function () {
@@ -138,6 +206,43 @@ game.ball = {
         this.x += this.dx;
         this.y += this.dy;
 
+
+    },
+
+    onTheLeftSide: function(platform){
+        console.log("------");
+        console.log(this.x);
+        console.log(this.width);
+        console.log(this.x + this.width / 2);
+        console.log(platform.x + platform.width / 2);
+       return  (this.x + this.width / 2) < (platform.x + platform.width / 2);
+
+
+    },
+
+    bumpPlatform: function(platform){
+        this.dy = -this.speed;
+        this.dx = this.onTheLeftSide(platform) ? -this.speed : this.speed;
+    },
+
+    sideCheck: function () {
+        let x = this.x + this.dx;
+        let y = this.y + this.dy;
+        let xwidth = x + this.width;
+        
+        if (x < 0) {
+            this.x = 0;
+            this.dx = this.speed;
+        } else if ( xwidth > game.width){
+            this.x = game.width - this.width;
+            this.dx = -this.speed;
+        } else if (y < 0) {
+            this.y = 0;
+            this.dy = this.speed;
+        } else if ( y + this.height > game.height){
+            game.over();
+            //Game over (bottom side)
+        }
     }
 };
 
@@ -145,9 +250,11 @@ game.ball = {
 game.platform = {
     x: 300,
     y: 300,
-    speed: 6,
+    speed: 8,
     dx: 0,
     ball: game.ball,
+    width: 104,
+    height:24,
     move: function () {
         this.x += this.dx;
 
@@ -170,6 +277,7 @@ game.platform = {
         if(this.ball){
             this.ball.jump();
             this.ball = false;
+            //game.ball.rised = true;
         }
     }
 };
